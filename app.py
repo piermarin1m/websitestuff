@@ -66,22 +66,28 @@ if st.button("Visit URL"):
         
         # First verify the backend is accessible
         try:
+            # Health check
             health_response = requests.get(f"{BACKEND_URL}/health", timeout=TIMEOUT_SECONDS)
             if health_response.status_code != 200:
                 raise RequestException(f"Backend health check failed with status code: {health_response.status_code}")
             
-            # If health check passes, create iframe pointing to backend proxy
+            # Make the fetch_website request
             encoded_url = urllib.parse.quote(url, safe='')
             proxied_url = f"{BACKEND_URL}/fetch_website?url={encoded_url}"
+            print(f"Frontend: Sending request to fetch_website: {proxied_url}")
             
-            # Create a container for the iframe with custom styling
-            iframe_container = st.container()
-            with iframe_container:
+            fetch_response = requests.get(proxied_url, timeout=TIMEOUT_SECONDS)
+            if fetch_response.status_code != 200:
+                raise RequestException(f"Failed to fetch website: {fetch_response.text}")
+            
+            # Create a container for the content
+            content_container = st.container()
+            with content_container:
                 st.markdown(
                     f"""
                     <div style="width: 100%; height: 800px; overflow: hidden; border: 1px solid #ccc; border-radius: 5px;">
                         <iframe 
-                            src="{proxied_url}"
+                            srcdoc='{fetch_response.text}'
                             width="100%" 
                             height="100%" 
                             frameborder="0" 
@@ -95,7 +101,7 @@ if st.button("Visit URL"):
                     """,
                     unsafe_allow_html=True,
                 )
-            print("Frontend: iframe created successfully\n")
+            print("Frontend: Content displayed successfully\n")
             
         except ConnectTimeout:
             raise RequestException("Backend server connection timed out. Please verify the server is running.")
