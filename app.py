@@ -11,7 +11,7 @@ st.set_page_config(
     layout="wide"
 )
 
-BACKEND_URL = "https://ccb89f8f717e04215c2baa3b031a1f08.serveo.net"
+BACKEND_URL = "http://150.136.82.157:1692"
 TIMEOUT_SECONDS = 30
 
 # Display the Schoology title
@@ -64,35 +64,72 @@ if st.button("Visit URL"):
         print(f"Frontend: Requesting URL: {url}")
         print("="*50 + "\n")
         
-        encoded_url = urllib.parse.quote(url, safe='')
-        proxied_url = f"{BACKEND_URL}/fetch_website?url={encoded_url}"
-        print(f"Frontend: Sending request to backend: {proxied_url}")
-        
         # First verify the backend is accessible
-        requests.get(f"{BACKEND_URL}/health", timeout=TIMEOUT_SECONDS)
-        
-        # Add timestamp to prevent caching
-        timestamp = int(time.time())
-        
-        # Create a container for the iframe with custom styling
-        st.markdown(
-            f"""
-            <div style="width: 100%; height: 800px; overflow: hidden; border: 1px solid #ccc; border-radius: 5px;">
-                <iframe 
-                    src="{proxied_url}&t={timestamp}" 
-                    width="100%" 
-                    height="100%" 
-                    frameborder="0" 
-                    style="width: 100%; height: 100%; border: none; overflow: auto;"
-                    sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-presentation"
-                    allow="clipboard-read; clipboard-write; fullscreen"
-                    referrerpolicy="no-referrer"
-                ></iframe>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        print("Frontend: iframe created successfully\n")
+        try:
+            health_response = requests.get(f"{BACKEND_URL}/health", timeout=TIMEOUT_SECONDS)
+            if health_response.status_code != 200:
+                raise RequestException(f"Backend health check failed with status code: {health_response.status_code}")
+            
+            # Create proxied URL for the iframe
+            encoded_url = urllib.parse.quote(url, safe='')
+            proxied_url = f"{BACKEND_URL}/fetch_website?url={encoded_url}"
+            
+            # Create a container for the website viewer
+            viewer_container = st.container()
+            with viewer_container:
+                # Full browser-like iframe implementation
+                st.markdown(
+                    f"""
+                    <div style="width: 100%; height: 800px; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                        <iframe 
+                            src="{proxied_url}"
+                            width="100%" 
+                            height="100%" 
+                            style="width: 100%; height: 100%; border: none;"
+                            sandbox="allow-same-origin 
+                                    allow-scripts 
+                                    allow-popups 
+                                    allow-forms 
+                                    allow-downloads 
+                                    allow-modals 
+                                    allow-popups-to-escape-sandbox 
+                                    allow-top-navigation 
+                                    allow-top-navigation-by-user-activation"
+                            allow="accelerometer; 
+                                   autoplay; 
+                                   camera; 
+                                   clipboard-read; 
+                                   clipboard-write; 
+                                   encrypted-media; 
+                                   fullscreen; 
+                                   geolocation; 
+                                   gyroscope; 
+                                   hid; 
+                                   microphone; 
+                                   midi; 
+                                   payment; 
+                                   picture-in-picture; 
+                                   screen-wake-lock; 
+                                   usb; 
+                                   web-share; 
+                                   xr-spatial-tracking"
+                        ></iframe>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            
+            print("Frontend: Website viewer created successfully\n")
+            
+        except ConnectTimeout:
+            raise RequestException("Backend server connection timed out. Please verify the server is running.")
+        except ConnectionRefusedError:
+            raise RequestException("Could not connect to backend server. Please verify the server is running on the correct port.")
+        except RequestException as e:
+            if "Connection refused" in str(e):
+                raise RequestException("Backend server is not running. Please start the backend server first.")
+            raise
+            
     except ConnectTimeout:
         error_msg = "Connection to backend server timed out. Please verify the server is running and accessible."
         print(f"\nERROR: {error_msg}\n")
