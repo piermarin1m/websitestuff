@@ -11,7 +11,7 @@ st.set_page_config(
     layout="wide"
 )
 
-BACKEND_URL = "http://127.0.0.1:1629"
+BACKEND_URL = "http://150.136.82.157:1692"
 TIMEOUT_SECONDS = 30
 
 # Display the Schoology title
