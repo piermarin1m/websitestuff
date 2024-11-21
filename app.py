@@ -58,8 +58,6 @@ with st.sidebar:
             st.error(f"Unexpected error: {str(e)}")
 
 # Main content area - Visit URL button and iframe
-# Main content area - Visit URL button and iframe
-# Main content area - Visit URL button and iframe
 if st.button("Visit URL"):
     try:
         print("\n" + "="*50)
@@ -68,17 +66,27 @@ if st.button("Visit URL"):
         
         # First verify the backend is accessible
         try:
+            # Health check
             health_response = requests.get(f"{BACKEND_URL}/health", timeout=TIMEOUT_SECONDS)
             if health_response.status_code != 200:
                 raise RequestException(f"Backend health check failed with status code: {health_response.status_code}")
             
-            # Create proxied URL for the iframe
+            # Make the fetch_website request
             encoded_url = urllib.parse.quote(url, safe='')
             proxied_url = f"{BACKEND_URL}/fetch_website?url={encoded_url}"
+            print(f"Frontend: Fetching website content from: {proxied_url}")
+            
+            # Make the actual request to fetch_website
+            fetch_response = requests.get(proxied_url, timeout=TIMEOUT_SECONDS)
+            if fetch_response.status_code != 200:
+                raise RequestException(f"Failed to fetch website: {fetch_response.text}")
             
             # Create a container for the website viewer
             viewer_container = st.container()
             with viewer_container:
+                # Create a unique key for the iframe
+                iframe_key = f"iframe_{int(time.time())}"
+                
                 # Custom HTML/CSS for a better website viewer
                 st.markdown(
                     f"""
@@ -135,8 +143,9 @@ if st.button("Visit URL"):
                         </div>
                         <div class="viewer-content">
                             <iframe 
+                                key="{iframe_key}"
                                 class="website-iframe"
-                                src="{proxied_url}"
+                                srcdoc='{fetch_response.text}'
                                 sandbox="allow-same-origin allow-scripts allow-popups allow-forms 
                                          allow-modals allow-downloads allow-presentation allow-top-navigation 
                                          allow-popups-to-escape-sandbox"
