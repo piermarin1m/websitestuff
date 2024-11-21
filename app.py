@@ -59,6 +59,7 @@ with st.sidebar:
 
 # Main content area - Visit URL button and iframe
 # Main content area - Visit URL button and iframe
+# Main content area - Visit URL button and iframe
 if st.button("Visit URL"):
     try:
         print("\n" + "="*50)
@@ -74,30 +75,83 @@ if st.button("Visit URL"):
             # Create proxied URL for the iframe
             encoded_url = urllib.parse.quote(url, safe='')
             proxied_url = f"{BACKEND_URL}/fetch_website?url={encoded_url}"
-            print(f"Frontend: Creating iframe with URL: {proxied_url}")
             
-            # Create a container for the iframe
-            iframe_container = st.container()
-            with iframe_container:
+            # Create a container for the website viewer
+            viewer_container = st.container()
+            with viewer_container:
+                # Custom HTML/CSS for a better website viewer
                 st.markdown(
                     f"""
-                    <div style="width: 100%; height: 800px; overflow: hidden; border: 1px solid #ccc; border-radius: 5px;">
-                        <iframe 
-                            src="{proxied_url}"
-                            width="100%" 
-                            height="100%" 
-                            frameborder="0" 
-                            style="width: 100%; height: 100%; border: none; overflow: auto;"
-                            sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-downloads allow-presentation"
-                            allow="accelerometer; autoplay; clipboard-read; clipboard-write; encrypted-media; 
-                                   fullscreen; geolocation; gyroscope; microphone; midi; payment; 
-                                   picture-in-picture; screen-wake-lock; web-share"
-                        ></iframe>
+                    <style>
+                        .website-viewer {{
+                            width: 100%;
+                            height: 800px;
+                            border: 1px solid #ddd;
+                            border-radius: 10px;
+                            overflow: hidden;
+                            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                            background: white;
+                            position: relative;
+                        }}
+                        
+                        .viewer-header {{
+                            height: 40px;
+                            background: #f5f5f5;
+                            border-bottom: 1px solid #ddd;
+                            display: flex;
+                            align-items: center;
+                            padding: 0 10px;
+                        }}
+                        
+                        .viewer-address {{
+                            flex-grow: 1;
+                            background: white;
+                            border: 1px solid #ddd;
+                            border-radius: 15px;
+                            padding: 5px 10px;
+                            margin: 0 10px;
+                            font-size: 14px;
+                            color: #333;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                            white-space: nowrap;
+                        }}
+                        
+                        .viewer-content {{
+                            height: calc(100% - 40px);
+                            overflow: hidden;
+                        }}
+                        
+                        .website-iframe {{
+                            width: 100%;
+                            height: 100%;
+                            border: none;
+                        }}
+                    </style>
+                    
+                    <div class="website-viewer">
+                        <div class="viewer-header">
+                            <div class="viewer-address">{url}</div>
+                        </div>
+                        <div class="viewer-content">
+                            <iframe 
+                                class="website-iframe"
+                                src="{proxied_url}"
+                                sandbox="allow-same-origin allow-scripts allow-popups allow-forms 
+                                         allow-modals allow-downloads allow-presentation allow-top-navigation 
+                                         allow-popups-to-escape-sandbox"
+                                allow="accelerometer; autoplay; clipboard-read; clipboard-write; 
+                                       encrypted-media; fullscreen; geolocation; gyroscope; 
+                                       microphone; midi; payment; picture-in-picture; 
+                                       screen-wake-lock; web-share"
+                            ></iframe>
+                        </div>
                     </div>
                     """,
                     unsafe_allow_html=True,
                 )
-            print("Frontend: iframe created successfully\n")
+            
+            print("Frontend: Website viewer created successfully\n")
             
         except ConnectTimeout:
             raise RequestException("Backend server connection timed out. Please verify the server is running.")
