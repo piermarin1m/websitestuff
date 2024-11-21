@@ -11,7 +11,7 @@ st.set_page_config(
     layout="wide"
 )
 
-BACKEND_URL = "https://hidden-castle-92662.herokuapp.com"
+BACKEND_URL = "https://git.heroku.com/hidden-castle-92662.git"
 TIMEOUT_SECONDS = 30
 
 # Display the Schoology title
