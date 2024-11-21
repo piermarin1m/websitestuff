@@ -11,7 +11,7 @@ st.set_page_config(
     layout="wide"
 )
 
-BACKEND_URL = "https://b86e401e7cf42cf043715383c885db9f.serveo.net"
+BACKEND_URL = "https://5922b4b8b877413a08d9f152336ed335.serveo.net"
 TIMEOUT_SECONDS = 30
 
 # Display the Schoology title
