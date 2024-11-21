@@ -64,35 +64,45 @@ if st.button("Visit URL"):
         print(f"Frontend: Requesting URL: {url}")
         print("="*50 + "\n")
         
+        # Encode the URL for safe transmission
         encoded_url = urllib.parse.quote(url, safe='')
         proxied_url = f"{BACKEND_URL}/fetch_website?url={encoded_url}"
         print(f"Frontend: Sending request to backend: {proxied_url}")
         
-        # First verify the backend is accessible
-        requests.get(f"{BACKEND_URL}/health", timeout=TIMEOUT_SECONDS)
-        
-        # Add timestamp to prevent caching
-        timestamp = int(time.time())
-        
-        # Create a container for the iframe with custom styling
-        st.markdown(
-            f"""
-            <div style="width: 100%; height: 800px; overflow: hidden; border: 1px solid #ccc; border-radius: 5px;">
-                <iframe 
-                    src="{proxied_url}&t={timestamp}" 
-                    width="100%" 
-                    height="100%" 
-                    frameborder="0" 
-                    style="width: 100%; height: 100%; border: none; overflow: auto;"
-                    sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-presentation"
-                    allow="clipboard-read; clipboard-write; fullscreen"
-                    referrerpolicy="no-referrer"
-                ></iframe>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        print("Frontend: iframe created successfully\n")
+        # Verify the backend is accessible
+        health_check = requests.get(f"{BACKEND_URL}/health", timeout=TIMEOUT_SECONDS)
+        if health_check.status_code != 200:
+            st.error("Backend health check failed. Ensure the server is running.")
+            print(f"Health check failed: {health_check.text}")
+        else:
+            # Add timestamp to prevent caching
+            timestamp = int(time.time())
+            
+            # Request the proxied website from the backend
+            website_response = requests.get(proxied_url, timeout=TIMEOUT_SECONDS)
+            if website_response.status_code != 200:
+                st.error(f"Failed to fetch website: {website_response.text}")
+                print(f"Failed to fetch website: {website_response.text}")
+            else:
+                # Render the iframe if successful
+                st.markdown(
+                    f"""
+                    <div style="width: 100%; height: 800px; overflow: hidden; border: 1px solid #ccc; border-radius: 5px;">
+                        <iframe 
+                            src="{proxied_url}&t={timestamp}" 
+                            width="100%" 
+                            height="100%" 
+                            frameborder="0" 
+                            style="width: 100%; height: 100%; border: none; overflow: auto;"
+                            sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-presentation"
+                            allow="clipboard-read; clipboard-write; fullscreen"
+                            referrerpolicy="no-referrer"
+                        ></iframe>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+                print("Frontend: iframe created successfully\n")
     except ConnectTimeout:
         error_msg = "Connection to backend server timed out. Please verify the server is running and accessible."
         print(f"\nERROR: {error_msg}\n")
@@ -105,3 +115,5 @@ if st.button("Visit URL"):
         error_msg = f"Unexpected error: {str(e)}"
         print(f"\nERROR: {error_msg}\n")
         st.error(error_msg)
+
+
