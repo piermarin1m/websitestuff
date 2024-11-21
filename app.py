@@ -58,6 +58,7 @@ with st.sidebar:
             st.error(f"Unexpected error: {str(e)}")
 
 # Main content area - Visit URL button and iframe
+# Main content area - Visit URL button and iframe
 if st.button("Visit URL"):
     try:
         print("\n" + "="*50)
@@ -66,39 +67,30 @@ if st.button("Visit URL"):
         
         # First verify the backend is accessible
         try:
+            # Health check
             health_response = requests.get(f"{BACKEND_URL}/health", timeout=TIMEOUT_SECONDS)
             if health_response.status_code != 200:
                 raise RequestException(f"Backend health check failed with status code: {health_response.status_code}")
             
-            # If health check passes, proceed to load the website
+            # If health check passes, fetch the website content
             encoded_url = urllib.parse.quote(url, safe='')
             proxied_url = f"{BACKEND_URL}/fetch_website?url={encoded_url}"
             print(f"Frontend: Sending request to backend: {proxied_url}")
             
-            # Add timestamp to prevent caching
-            timestamp = int(time.time())
+            # Make the actual request to fetch_website
+            fetch_response = requests.get(proxied_url, timeout=TIMEOUT_SECONDS)
+            if fetch_response.status_code != 200:
+                raise RequestException(f"Failed to fetch website: {fetch_response.text}")
             
             # Create a container for the iframe with custom styling
             iframe_container = st.container()
             with iframe_container:
-                st.markdown(
-                    f"""
-                    <div style="width: 100%; height: 800px; overflow: hidden; border: 1px solid #ccc; border-radius: 5px;">
-                        <iframe 
-                            src="{proxied_url}&t={timestamp}" 
-                            width="100%" 
-                            height="100%" 
-                            frameborder="0" 
-                            style="width: 100%; height: 100%; border: none; overflow: auto;"
-                            sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-presentation"
-                            allow="clipboard-read; clipboard-write; fullscreen"
-                            referrerpolicy="no-referrer"
-                        ></iframe>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
+                st.components.v1.html(
+                    fetch_response.text,
+                    height=800,
+                    scrolling=True
                 )
-            print("Frontend: iframe created successfully\n")
+            print("Frontend: Content displayed successfully\n")
             
         except ConnectTimeout:
             raise RequestException("Backend server connection timed out. Please verify the server is running.")
