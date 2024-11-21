@@ -68,32 +68,34 @@ if st.button("Visit URL"):
         # Encode the target URL
         encoded_url = urllib.parse.quote(url, safe='')
 
-        # Request the backend to fetch the website
-        fetch_response = requests.get(f"{BACKEND_URL}/fetch_website?url={encoded_url}", timeout=TIMEOUT_SECONDS)
-        if fetch_response.status_code != 200:
-            raise RequestException(f"Failed to fetch website: {fetch_response.text}")
-
-        # Add timestamp to prevent caching
-        timestamp = int(time.time())
-
-        # Create a container for the iframe with custom styling
-        st.markdown(
-            f"""
-            <div style="width: 100%; height: 800px; overflow: hidden; border: 1px solid #ccc; border-radius: 5px;">
-                <iframe 
-                    src="{BACKEND_URL}/fetch_website?url={encoded_url}&t={timestamp}" 
-                    width="100%" 
-                    height="100%" 
-                    frameborder="0" 
-                    style="width: 100%; height: 100%; border: none; overflow: auto;"
-                    sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-presentation"
-                    allow="clipboard-read; clipboard-write; fullscreen"
-                    referrerpolicy="no-referrer"
-                ></iframe>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        try:
+            fetch_response = requests.get(f"{BACKEND_URL}/fetch_website?url={encoded_url}", timeout=TIMEOUT_SECONDS)
+            if fetch_response.status_code == 200:
+                if "Content-Security-Policy" in fetch_response.headers:
+                    raise RequestException("The target website cannot be embedded due to its Content-Security-Policy.")
+                
+                # Add the iframe if content can be embedded
+                st.markdown(
+                    f"""
+                    <div style="width: 100%; height: 800px; overflow: hidden; border: 1px solid #ccc; border-radius: 5px;">
+                        <iframe 
+                            src="{BACKEND_URL}/fetch_website?url={encoded_url}" 
+                            width="100%" 
+                            height="100%" 
+                            frameborder="0" 
+                            style="width: 100%; height: 100%; border: none; overflow: auto;"
+                            sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-presentation"
+                            allow="clipboard-read; clipboard-write; fullscreen"
+                            referrerpolicy="no-referrer"
+                        ></iframe>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            else:
+                raise RequestException(f"Failed to fetch website: {fetch_response.text}")
+        except RequestException as e:
+            st.error(f"Error: {str(e)}")
         st.success("Website loaded successfully!")
     except ConnectTimeout:
         st.error("Connection to backend server timed out. Please verify the server is running and accessible.")
