@@ -11,7 +11,7 @@ st.set_page_config(
     layout="wide"
 )
 
-BACKEND_URL = "http://150.136.82.157:1692"
+BACKEND_URL = "http://127.0.0.1:1629"
 TIMEOUT_SECONDS = 30
 
 # Display the Schoology title
@@ -75,6 +75,12 @@ if st.button("Visit URL"):
             proxied_url = f"{BACKEND_URL}/fetch_website?url={encoded_url}"
             print(f"Frontend: Sending request to backend: {proxied_url}")
             
+            # Actually make the request to fetch_website
+            with st.spinner("Loading website..."):
+                fetch_response = requests.get(proxied_url, timeout=TIMEOUT_SECONDS)
+                if fetch_response.status_code != 200:
+                    raise RequestException(f"Failed to fetch website: {fetch_response.text}")
+            
             # Add timestamp to prevent caching
             timestamp = int(time.time())
             
@@ -85,7 +91,7 @@ if st.button("Visit URL"):
                     f"""
                     <div style="width: 100%; height: 800px; overflow: hidden; border: 1px solid #ccc; border-radius: 5px;">
                         <iframe 
-                            src="{proxied_url}&t={timestamp}" 
+                            srcdoc="{fetch_response.text.replace('"', '&quot;')}"
                             width="100%" 
                             height="100%" 
                             frameborder="0" 
