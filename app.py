@@ -75,12 +75,6 @@ if st.button("Visit URL"):
             proxied_url = f"{BACKEND_URL}/fetch_website?url={encoded_url}"
             print(f"Frontend: Sending request to backend: {proxied_url}")
             
-            # Actually make the request to fetch_website
-            with st.spinner("Loading website..."):
-                fetch_response = requests.get(proxied_url, timeout=TIMEOUT_SECONDS)
-                if fetch_response.status_code != 200:
-                    raise RequestException(f"Failed to fetch website: {fetch_response.text}")
-            
             # Add timestamp to prevent caching
             timestamp = int(time.time())
             
@@ -91,7 +85,7 @@ if st.button("Visit URL"):
                     f"""
                     <div style="width: 100%; height: 800px; overflow: hidden; border: 1px solid #ccc; border-radius: 5px;">
                         <iframe 
-                            srcdoc="{fetch_response.text.replace('"', '&quot;')}"
+                            src="{proxied_url}&t={timestamp}" 
                             width="100%" 
                             height="100%" 
                             frameborder="0" 
