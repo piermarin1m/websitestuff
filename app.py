@@ -1,8 +1,6 @@
 import streamlit as st
 import requests
 from requests.exceptions import ConnectTimeout, RequestException
-import time
-import urllib.parse
 
 # Set page config FIRST with fixed Schoology title and icon
 st.set_page_config(
@@ -60,32 +58,16 @@ with st.sidebar:
 # Main content area - Visit URL button and iframe
 if st.button("Visit URL"):
     try:
-        print("\n" + "="*50)
-        print(f"Frontend: Requesting URL: {url}")
-        print("="*50 + "\n")
-
         # Check backend health first
         health_response = requests.get(f"{BACKEND_URL}/health", timeout=TIMEOUT_SECONDS)
         if health_response.status_code != 200:
             raise RequestException(f"Backend health check failed with status code: {health_response.status_code}")
 
-        # Send request to `/fetch_website` directly
+        # Send request to `/fetch_website`
         fetch_response = requests.get(f"{BACKEND_URL}/fetch_website", params={"url": url}, timeout=TIMEOUT_SECONDS)
         if fetch_response.status_code == 200:
-            print("Backend: Fetch website request successful")
-            
-            # Render fetched content in the app
-            viewer_container = st.container()
-            with viewer_container:
-                # Embed the fetched HTML content
-                st.markdown(
-                    f"""
-                    <div style="width: 100%; height: 800px; background: white; border-radius: 10px; overflow: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-                        {fetch_response.text}
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
+            # Embed fetched HTML using Streamlit components
+            st.components.v1.html(fetch_response.text, height=800, scrolling=True)
         else:
             st.error(f"Failed to fetch website. Status code: {fetch_response.status_code}, Response: {fetch_response.text}")
 
@@ -95,4 +77,3 @@ if st.button("Visit URL"):
         st.error(f"Error connecting to backend: {str(e)}")
     except Exception as e:
         st.error(f"Unexpected error: {str(e)}")
-
