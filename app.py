@@ -63,82 +63,36 @@ if st.button("Visit URL"):
         print("\n" + "="*50)
         print(f"Frontend: Requesting URL: {url}")
         print("="*50 + "\n")
-        
-        # First verify the backend is accessible
-        try:
-            health_response = requests.get(f"{BACKEND_URL}/health", timeout=TIMEOUT_SECONDS)
-            if health_response.status_code != 200:
-                raise RequestException(f"Backend health check failed with status code: {health_response.status_code}")
+
+        # Check backend health first
+        health_response = requests.get(f"{BACKEND_URL}/health", timeout=TIMEOUT_SECONDS)
+        if health_response.status_code != 200:
+            raise RequestException(f"Backend health check failed with status code: {health_response.status_code}")
+
+        # Send request to `/fetch_website` directly
+        fetch_response = requests.get(f"{BACKEND_URL}/fetch_website", params={"url": url}, timeout=TIMEOUT_SECONDS)
+        if fetch_response.status_code == 200:
+            print("Backend: Fetch website request successful")
             
-            # Create proxied URL for the iframe
-            encoded_url = urllib.parse.quote(url, safe='')
-            proxied_url = f"{BACKEND_URL}/fetch_website?url={encoded_url}"
-            
-            # Create a container for the website viewer
+            # Render fetched content in the app
             viewer_container = st.container()
             with viewer_container:
-                # Full browser-like iframe implementation
+                # Embed the fetched HTML content
                 st.markdown(
                     f"""
-                    <div style="width: 100%; height: 800px; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-                        <iframe 
-                            src="{proxied_url}"
-                            width="100%" 
-                            height="100%" 
-                            style="width: 100%; height: 100%; border: none;"
-                            sandbox="allow-same-origin 
-                                    allow-scripts 
-                                    allow-popups 
-                                    allow-forms 
-                                    allow-downloads 
-                                    allow-modals 
-                                    allow-popups-to-escape-sandbox 
-                                    allow-top-navigation 
-                                    allow-top-navigation-by-user-activation"
-                            allow="accelerometer; 
-                                   autoplay; 
-                                   camera; 
-                                   clipboard-read; 
-                                   clipboard-write; 
-                                   encrypted-media; 
-                                   fullscreen; 
-                                   geolocation; 
-                                   gyroscope; 
-                                   hid; 
-                                   microphone; 
-                                   midi; 
-                                   payment; 
-                                   picture-in-picture; 
-                                   screen-wake-lock; 
-                                   usb; 
-                                   web-share; 
-                                   xr-spatial-tracking"
-                        ></iframe>
+                    <div style="width: 100%; height: 800px; background: white; border-radius: 10px; overflow: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                        {fetch_response.text}
                     </div>
                     """,
                     unsafe_allow_html=True,
                 )
-            
-            print("Frontend: Website viewer created successfully\n")
-            
-        except ConnectTimeout:
-            raise RequestException("Backend server connection timed out. Please verify the server is running.")
-        except ConnectionRefusedError:
-            raise RequestException("Could not connect to backend server. Please verify the server is running on the correct port.")
-        except RequestException as e:
-            if "Connection refused" in str(e):
-                raise RequestException("Backend server is not running. Please start the backend server first.")
-            raise
-            
+        else:
+            st.error(f"Failed to fetch website. Status code: {fetch_response.status_code}, Response: {fetch_response.text}")
+
     except ConnectTimeout:
-        error_msg = "Connection to backend server timed out. Please verify the server is running and accessible."
-        print(f"\nERROR: {error_msg}\n")
-        st.error(error_msg)
+        st.error("Connection to backend server timed out. Please verify the server is running and accessible.")
     except RequestException as e:
-        error_msg = f"Error connecting to backend: {str(e)}"
-        print(f"\nERROR: {error_msg}\n")
-        st.error(error_msg)
+        st.error(f"Error connecting to backend: {str(e)}")
     except Exception as e:
-        error_msg = f"Unexpected error: {str(e)}"
-        print(f"\nERROR: {error_msg}\n")
-        st.error(error_msg)
+        st.error(f"Unexpected error: {str(e)}")
+
