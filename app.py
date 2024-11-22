@@ -61,19 +61,17 @@ if st.button("Visit URL"):
         # Check backend health first
         health_response = requests.get(f"{BACKEND_URL}/health", timeout=TIMEOUT_SECONDS)
         if health_response.status_code != 200:
-            raise RequestException(f"Backend health check failed with status code: {health_response.status_code}")
+            st.error("Backend health check failed.")
+            st.stop()
 
-        # Send request to `/fetch_website`
+        # Fetch the website
         fetch_response = requests.get(f"{BACKEND_URL}/fetch_website", params={"url": url}, timeout=TIMEOUT_SECONDS)
-        if fetch_response.status_code == 200:
-            # Embed fetched HTML using Streamlit components
-            st.components.v1.html(fetch_response.text, height=800, scrolling=True)
-        else:
-            st.error(f"Failed to fetch website. Status code: {fetch_response.status_code}, Response: {fetch_response.text}")
+        fetch_response.raise_for_status()  # Raise error for bad HTTP responses
+        
+        # Render the fetched HTML
+        st.components.v1.html(fetch_response.text, height=800, scrolling=True)
 
-    except ConnectTimeout:
-        st.error("Connection to backend server timed out. Please verify the server is running and accessible.")
-    except RequestException as e:
-        st.error(f"Error connecting to backend: {str(e)}")
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error fetching website: {e}")
     except Exception as e:
-        st.error(f"Unexpected error: {str(e)}")
+        st.error(f"Unexpected error: {e}")
